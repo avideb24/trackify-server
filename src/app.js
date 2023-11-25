@@ -9,6 +9,17 @@ const port = process.env.PORT || 5000;
 applyMiddleware(app);
 
 
+async function run() {
+    try {
+        
+    } 
+    finally {
+      
+    }
+  }
+  run().catch(console.dir);
+
+
 app.get('/health', (req, res)=> {
     res.send('Tech Vibe server is running successfully...!!!')
 })
