@@ -31,6 +31,7 @@ async function run() {
 
     const userCollection = client.db("trackifyDB").collection("users");
     const assetCollection = client.db("trackifyDB").collection("assets");
+    const teamCollection = client.db("trackifyDB").collection("teams");
 
 
     // asset related api
@@ -105,6 +106,36 @@ async function run() {
       };
       const result = await userCollection.updateOne(filter, updatedInfo);
       res.send(result);
+    })
+
+    // team related api
+    app.post('/teams', async(req, res) => {
+      const { adminEmail, teamMembers } = req.body;
+
+      console.log("team info:", adminEmail, teamMembers);
+
+      await userCollection.updateMany(
+        { email: { $in: teamMembers } },
+        { $set: { role: "employee" } }
+      );
+
+      const existingTeam = await teamCollection.findOne({ adminEmail });
+
+      if (existingTeam) {       
+          await teamCollection.updateOne(
+          { adminEmail },
+          { $addToSet: { teamMembers: { $each: teamMembers } } }
+        );
+        res.send({message: true});
+      }
+      else {        
+        const newTeam = {
+          adminEmail,
+          teamMembers,
+        };
+        await teamCollection.insertOne(newTeam);
+        res.send({message: true});
+      }
     })
 
 
