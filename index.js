@@ -77,7 +77,7 @@ async function run() {
   })
 
 
-    // employee related api
+    // users related api
     app.get('/users', async(req, res) => {
         const result = await userCollection.find().toArray();
         res.send(result);
@@ -108,7 +108,22 @@ async function run() {
       res.send(result);
     })
 
+    // get employees
+    app.get('/employees', async(req, res) => {
+      const { employeeList } = req.query;
+      const parsedEmployeeList = JSON.parse(employeeList);
+      const emails = parsedEmployeeList.map(obj => obj.email);
+      const result = await userCollection.find({ email: { $in: emails } }).toArray();
+      res.send(result)
+    })
+
+
     // team related api
+    app.get('/teams', async(req, res) => {
+      const result = await teamCollection.find().toArray();
+      res.send(result);
+    })
+
     app.post('/teams', async(req, res) => {
       const { adminEmail, teamMembers } = req.body;
 
@@ -136,6 +151,17 @@ async function run() {
         await teamCollection.insertOne(newTeam);
         res.send({message: true});
       }
+    })
+
+    app.delete('/teams/:email', async(req, res) => {
+      const userEmail = req.params.email;
+      const {adminEmail} = req.body;
+      const query = { adminEmail: adminEmail }
+      const teamData = await teamCollection.findOne(query);
+      const employees = teamData.teamMembers;
+      const filteredArray = employees.filter(email => email !== userEmail);
+      const result = await teamCollection.updateOne(query, { $set: { teamMembers: filteredArray } });
+      res.send(result);
     })
 
 
