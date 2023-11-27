@@ -32,6 +32,7 @@ async function run() {
     const userCollection = client.db("trackifyDB").collection("users");
     const assetCollection = client.db("trackifyDB").collection("assets");
     const teamCollection = client.db("trackifyDB").collection("teams");
+    const requestCollection = client.db("trackifyDB").collection("requests");
 
 
     // asset related api
@@ -161,6 +162,38 @@ async function run() {
       const employees = teamData.teamMembers;
       const filteredArray = employees.filter(email => email !== userEmail);
       const result = await teamCollection.updateOne(query, { $set: { teamMembers: filteredArray } });
+      res.send(result);
+    })
+
+    // employee team get api
+    app.get('/teams/:email', async(req, res) => {
+      const employeeEmail = req.params.email;
+      const teamData = await teamCollection.findOne({ teamMembers: { $elemMatch: { $eq: employeeEmail } } });
+      if(!teamData){
+        return res.send({message: false})
+      };
+      const adminEmail = teamData.adminEmail;
+      const teamEmails = [adminEmail, ...teamData.teamMembers];
+      const team = await userCollection.find({ email: { $in: teamEmails } }).toArray();      
+      res.send(team)
+    })
+
+    // request related api
+    app.get('/requests', async(req, res) => {
+      const result = await requestCollection.find().toArray();
+      res.send(result);
+    })
+
+    app.get('/requests/:email', async(req, res) => {
+      const email = req.params.email;
+      const query = {adminEmail: email};
+      const result = await requestCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    app.post('/requests', async(req, res) => {
+      const requestedAsset = req.body;
+      const result = await requestCollection.insertOne(requestedAsset);
       res.send(result);
     })
 
