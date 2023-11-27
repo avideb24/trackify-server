@@ -33,6 +33,7 @@ async function run() {
     const assetCollection = client.db("trackifyDB").collection("assets");
     const teamCollection = client.db("trackifyDB").collection("teams");
     const requestCollection = client.db("trackifyDB").collection("requests");
+    const CustomRequestCollection = client.db("trackifyDB").collection("customRequests");
 
 
     // asset related api
@@ -184,9 +185,18 @@ async function run() {
       res.send(result);
     })
 
+    // for admin
     app.get('/requests/:email', async(req, res) => {
       const email = req.params.email;
       const query = {adminEmail: email};
+      const result = await requestCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    // for employee
+    app.get('/requests/employee/:email', async(req, res) => {
+      const email = req.params.email;
+      const query = {userEmail: email};
       const result = await requestCollection.find(query).toArray();
       res.send(result);
     })
@@ -195,6 +205,20 @@ async function run() {
       const requestedAsset = req.body;
       const result = await requestCollection.insertOne(requestedAsset);
       res.send(result);
+    })
+
+    // custom requests api
+    app.get('/customRequests/:email', async(req, res) => {
+      const email = req.params.email;
+      const query = { adminEmail: email }
+      const result = await CustomRequestCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    app.post('/customRequests', async(req, res) => {
+      const requestInfo = req.body;
+      const result = await CustomRequestCollection.insertOne(requestInfo);
+      res.send(result)
     })
 
 
