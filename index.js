@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 
@@ -34,6 +35,14 @@ async function run() {
     const teamCollection = client.db("trackifyDB").collection("teams");
     const requestCollection = client.db("trackifyDB").collection("requests");
     const CustomRequestCollection = client.db("trackifyDB").collection("customRequests");
+
+
+    // jwt related api
+    app.post('/jwt', async(req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '2hr'});
+      res.send({token});
+    })
 
 
     // asset related api
@@ -128,9 +137,6 @@ async function run() {
 
     app.post('/teams', async(req, res) => {
       const { adminEmail, teamMembers } = req.body;
-
-      console.log("team info:", adminEmail, teamMembers);
-
       await userCollection.updateMany(
         { email: { $in: teamMembers } },
         { $set: { role: "employee" } }
@@ -208,6 +214,7 @@ async function run() {
     })
 
     // custom requests api
+    // get admin custom
     app.get('/customRequests/:email', async(req, res) => {
       const email = req.params.email;
       const query = { adminEmail: email }
@@ -215,10 +222,43 @@ async function run() {
       res.send(result);
     })
 
+    // get employee custom
+    app.get('/customRequests/employee/:email', async(req, res) => {
+      const email = req.params.email;
+      const query = { userEmail: email }
+      const result = await CustomRequestCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    app.get('/customRequests/request/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await CustomRequestCollection.findOne(query);
+      res.send(result);
+    })
+
     app.post('/customRequests', async(req, res) => {
       const requestInfo = req.body;
       const result = await CustomRequestCollection.insertOne(requestInfo);
       res.send(result)
+    })
+
+    app.patch('/customRequests/:id', async(req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const { name, price, need, info, type, image } = req.body;
+      const updatedDoc = {
+        $set: {
+          name, 
+          price, 
+          need, 
+          info, 
+          type, 
+          image
+        }
+      };
+      const result = await CustomRequestCollection.updateOne(filter, updatedDoc);
+      res.send(result);
     })
 
 
